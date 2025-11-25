@@ -1,0 +1,116 @@
+show_array = function(arr, max_show)
+    if len(arr) == 0 then
+        return "[]"
+    end if
+
+    if len(arr) <= max_show then
+        return "[" + join(arr, ", ") + "]"
+    end if
+
+    first_part = []
+    last_part = []
+
+    for i in range(0, max_show / 2, 1)
+        push(first_part, arr[i])
+    end for
+
+    start_last = len(arr) - max_show / 2
+    for i in range(start_last, len(arr), 1)
+        push(last_part, arr[i])
+    end for
+
+    return "[" + join(first_part, ", ") + " ... " + join(last_part, ", ") + "]"
+end function
+
+make_descending = function(n)
+    arr = []
+    i = n - 1
+    while i >= 0
+        push(arr, i)
+        i = i - 1
+    end while
+    return arr
+end function
+
+array_sum = function(arr)
+    sum = 0
+    for x in arr
+        sum = sum + x
+    end for
+    return sum
+end function
+
+is_sorted_correctly = function(arr)
+    for i in range(0, len(arr) - 1, 1)
+        if arr[i] > arr[i + 1] then
+            return false
+        end if
+    end for
+    return true
+end function
+
+
+test_sizes = [10, 50, 100, 1000, 10000]
+
+for size in test_sizes
+    println("")
+    println("Тестируем массив из " + to_string(size) + " элементов:")
+
+    original = make_descending(size)
+
+    println("     ДО сортировки:  " + show_array(original, 10))
+    println("     Первый элемент: " + to_string(original[0]))
+    println("     Последний элемент: " + to_string(original[len(original)-1]))
+    println("     Размер: " + to_string(len(original)))
+
+    sorted = original
+    sort(sorted)
+
+    println("     ПОСЛЕ сортировки: " + show_array(sorted, 10))
+    println("     Первый элемент: " + to_string(sorted[0]))
+    println("     Последний элемент: " + to_string(sorted[len(sorted)-1]))
+
+    is_correct = is_sorted_correctly(sorted)
+    sum_original = array_sum(original)
+    sum_sorted = array_sum(sorted)
+
+    if is_correct and sum_original == sum_sorted then
+        println("     СОРТИРОВКА УСПЕШНА!")
+        println("     Массив отсортирован корректно")
+        println("     Сумма элементов сохранена: " + to_string(sum_sorted))
+    else
+        println("     ОШИБКА СОРТИРОВКИ!")
+    end if
+end for
+
+println("")
+println("ФИНАЛЬНЫЙ ТЕСТ: БОЛЬШОЙ МАССИВ (100,000 элементов)")
+
+big_size = 100000
+println("Создаем массив из " + to_string(big_size) + " элементов...")
+
+big_array = make_descending(big_size)
+println("Создан убывающий массив [" + to_string(big_size-1) + ", " + to_string(big_size-2) + ", ..., 2, 1, 0]")
+
+original_sum = array_sum(big_array)
+println("Исходная сумма элементов: " + to_string(original_sum))
+
+println("Выполняем сортировку...")
+sort(big_array)
+
+sorted_sum = array_sum(big_array)
+is_big_correct = is_sorted_correctly(big_array)
+
+println("  РЕЗУЛЬТАТЫ БОЛЬШОГО ТЕСТА:")
+println("  Размер массива: " + to_string(len(big_array)))
+println("  Первый элемент: " + to_string(big_array[0]))
+println("  Последний элемент: " + to_string(big_array[len(big_array)-1]))
+println("  Сумма после сортировки: " + to_string(sorted_sum))
+
+if is_big_correct and original_sum == sorted_sum then
+    println("")
+    println("ЗАКЛЮЧЕНИЕ: Сортировка отработала успешно")
+    println("алгоритм успешно обработал " + to_string(big_size) + " элементов!")
+else
+    println("Обнаружены проблемы с сортировкой")
+end if
