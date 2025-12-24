@@ -1,4 +1,4 @@
-// решето Эратосфена до 100000 (включительно)
+// Простой решето Эратосфена до 100000 (включительно)
 // Печатаем: "<count> <last_prime> <checksum_first_100>"
 
 primes_up_to = function(n)
@@ -49,3 +49,4 @@ lastp = ps[-1]
 chk100 = sum_first_k(ps, 100)
 
 println(to_string(cnt) + " " + to_string(lastp) + " " + to_string(chk100))
+

@@ -277,7 +277,7 @@ void BytecodeVM::executeInstruction(const Instruction& instr, const CompiledFunc
         if (instr.operand >= func.bytecode.size()) {
             throw std::runtime_error("Invalid jump target");
         }
-        instruction_pointer = instr.operand - 1;
+        instruction_pointer = instr.operand - 1; // -1 потому что в execute() будет ++
         break;
     }
 
@@ -904,3 +904,4 @@ void printBytecode(const CompiledFunction& func) {
 
 } // namespace SimpleJIT
 } // namespace Interpreter
+

@@ -2,14 +2,16 @@
 
 # build.sh - Build script for C++23 interpreter project
 
-set -e
+set -e  # Exit on any error
 
+# Colors for output
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 BLUE='\033[1;34m'
-NC='\033[0m'
+NC='\033[0m' # No Color
 
+# Function to print colored output
 print_status() {
     echo -e "${GREEN}[INFO]${NC} $1"
 }
@@ -26,11 +28,13 @@ print_note() {
     echo -e "${BLUE}[NOTE]${NC} $1"
 }
 
+# Check compiler versions for C++23 support
 check_compiler() {
     if command -v g++ >/dev/null 2>&1; then
         GCC_VERSION=$(g++ -dumpversion)
         print_note "Found GCC version: $GCC_VERSION"
 
+        # Check if GCC version is >= 11
         if ! g++ -std=c++23 -x c++ -c /dev/null -o /dev/null 2>/dev/null; then
             print_error "GCC does not support C++23. Please upgrade to GCC 11 or later."
             print_note "You can also try using Clang 12+ instead."
@@ -52,15 +56,35 @@ check_compiler() {
     print_status "C++23 compiler support verified!"
 }
 
+# Default values
 BUILD_TYPE="Release"
 BUILD_EXAMPLES=ON
 BUILD_TESTS=OFF
 CLEAN=false
 INSTALL=false
 VERBOSE=false
+ENABLE_GC=ON
+ENABLE_SIMPLE_JIT=ON
 
+# Parse command line arguments
 while [[ $# -gt 0 ]]; do
     case $1 in
+        --gc)
+            ENABLE_GC=ON
+            shift
+            ;;
+        --no-gc)
+            ENABLE_GC=OFF
+            shift
+            ;;
+        --jit)
+            ENABLE_SIMPLE_JIT=ON
+            shift
+            ;;
+        --no-jit)
+            ENABLE_SIMPLE_JIT=OFF
+            shift
+            ;;
         --debug)
             BUILD_TYPE="Debug"
             shift
@@ -104,6 +128,10 @@ while [[ $# -gt 0 ]]; do
             echo "C++23 Requirements:"
             echo "  - GCC 11+ or Clang 12+ or MSVC 2022+"
             echo "  - CMake 3.20+"
+            echo "  --gc            Enable GC (default: ON)"
+            echo "  --no-gc         Disable GC"
+            echo "  --jit           Enable SimpleJIT (default: ON)"
+            echo "  --no-jit        Disable SimpleJIT"
             exit 0
             ;;
         *)
@@ -116,32 +144,37 @@ done
 print_status "C++23 Interpreter Build Script"
 print_status "=============================="
 
+# Check compiler support
 check_compiler
 
+# Check if we're in the right directory
 if [[ ! -f "CMakeLists.txt" ]]; then
     print_error "CMakeLists.txt not found. Please run this script from the project root."
     exit 1
 fi
 
+# Clean if requested
 if [[ "$CLEAN" == true ]]; then
     print_status "Cleaning build directory..."
     rm -rf build
 fi
 
+# Create build directory
 mkdir -p build
 cd build
 
 print_status "Configuring C++23 project..."
 print_status "Build type: $BUILD_TYPE"
 print_status "Examples: $BUILD_EXAMPLES"
-print_status "Tests: $BUILD_TESTS"
 
+# Configure with CMake
 CMAKE_ARGS=(
     "-DCMAKE_BUILD_TYPE=$BUILD_TYPE"
     "-DBUILD_EXAMPLES=$BUILD_EXAMPLES"
-    "-DBUILD_TESTS=$BUILD_TESTS"
     "-DCMAKE_CXX_STANDARD=23"
     "-DCMAKE_CXX_STANDARD_REQUIRED=ON"
+    "-DENABLE_GC=$ENABLE_GC"
+    "-DENABLE_SIMPLE_JIT=$ENABLE_SIMPLE_JIT"
 )
 
 if [[ "$VERBOSE" == true ]]; then
@@ -157,6 +190,7 @@ fi
 
 print_status "Building project with C++23..."
 
+# Build
 if [[ "$VERBOSE" == true ]]; then
     cmake --build . --parallel $(nproc 2>/dev/null || sysctl -n hw.ncpu 2>/dev/null || echo 4) --verbose
 else
@@ -170,11 +204,7 @@ fi
 
 print_status "Build completed successfully!"
 
-if [[ "$BUILD_TESTS" == "ON" ]]; then
-    print_status "Running tests..."
-    ctest --output-on-failure
-fi
-
+# Install if requested
 if [[ "$INSTALL" == true ]]; then
     print_status "Installing..."
     cmake --install .
@@ -186,9 +216,6 @@ print_status "Build artifacts:"
 echo "  Library: build/lib/"
 if [[ "$BUILD_EXAMPLES" == "ON" ]]; then
     echo "  Examples: build/examples/"
-fi
-if [[ "$BUILD_TESTS" == "ON" ]]; then
-    echo "  Tests: build/tests/"
 fi
 echo ""
 print_note "C++23 features enabled: std::ranges, modules (if supported), and more!"

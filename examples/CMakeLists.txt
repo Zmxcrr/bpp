@@ -76,3 +76,4 @@ if(BALD_FILES)
 else()
     message(STATUS "No .bald files found in examples/")
 endif()
+

@@ -44,7 +44,9 @@ enum class OpCode : uint8_t {
 
     MAKE_ARRAY, INDEX,
 
-    HALT
+    HALT,
+
+    CALL_SITE
 };
 
 struct Instruction {
@@ -59,6 +61,7 @@ struct CompiledFunction {
     std::vector<Instruction> bytecode;
     std::vector<Value> constants;
     std::vector<std::string> var_names;
+    std::vector<const Interpreter::CallExpr*> call_sites;
     int call_count = 0;
     bool is_compiled = false;
 
@@ -177,6 +180,16 @@ Value evaluateWithSimpleJIT(const Expr& expr, Environment& env);
 std::string opcodeToString(OpCode opcode);
 void printBytecode(const CompiledFunction& func);
 void printInstruction(const Instruction& instr, size_t index);
+
+// simple_jit.h
+struct BytecodeFunction {
+    std::vector<Instruction> instructions;
+    std::vector<Value> constants;
+    std::vector<std::string> variables;
+
+    // NEW: для гибридного CALL
+    std::vector<const Interpreter::CallExpr*> callSites; 
+};
 
 } // namespace SimpleJIT
 } // namespace Interpreter

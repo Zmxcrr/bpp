@@ -25,21 +25,6 @@ add_subdirectory(lib)
 
 add_executable(interpreter main.cpp)
 target_link_libraries(interpreter PRIVATE bald_interpreter)
-target_include_directories(interpreter PRIVATE ${CMAKE_SOURCE_DIR}/lib)
-
-if(ENABLE_SIMPLE_JIT AND EXISTS "${CMAKE_SOURCE_DIR}/lib/simple_jit.h")
-    target_compile_definitions(interpreter PRIVATE HAS_SIMPLE_JIT=1)
-    message(STATUS "Simple JIT support enabled")
-else()
-    message(STATUS "Simple JIT support disabled")
-endif()
-
-if(ENABLE_GC AND EXISTS "${CMAKE_SOURCE_DIR}/lib/gc.h")
-    target_compile_definitions(interpreter PRIVATE HAS_GC=1)
-    message(STATUS "Garbage collection enabled")
-else()
-    message(STATUS "Garbage collection disabled")
-endif()
 
 if(BUILD_EXAMPLES AND EXISTS "${CMAKE_SOURCE_DIR}/examples")
     add_subdirectory(examples)

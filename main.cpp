@@ -1,8 +1,15 @@
 #include "interpreter.h"
-#include "gc.h"
 #include <iostream>
 #include <fstream>
 #include <string>
+
+#ifdef HAS_GC
+#include "gc.h"
+#endif
+
+#ifdef HAS_SIMPLE_JIT
+#include "simple_jit.h"
+#endif
 
 int main(int argc, char* argv[]) {
     if (argc < 2) {
@@ -34,7 +41,17 @@ int main(int argc, char* argv[]) {
                        std::istreambuf_iterator<char>());
     file.close();
 
+    #ifdef HAS_GC
     Interpreter::GC::Collector::instance().setThreshold(100);
+    #endif
+    #ifdef HAS_SIMPLE_JIT
+    if (!Interpreter::SimpleJIT::initializeSimpleJIT()) {
+        std::cerr << "Warning: SimpleJIT initialization failed, continuing without JIT.\n";
+    } else {
+        Interpreter::SimpleJIT::setJITThreshold(3);
+        Interpreter::SimpleJIT::setJITOptimization(true);
+    }
+    #endif
 
     try {
         Interpreter::Lexer lexer(source);
@@ -61,31 +78,46 @@ int main(int argc, char* argv[]) {
             return 1;
         }
 
+        Interpreter::Environment* env = nullptr;
+
+        #ifdef HAS_GC
         auto* global_gc = Interpreter::GC::allocate<Interpreter::GC::GCEnvironment>(
             new Interpreter::Environment()
         );
-        
         Interpreter::GC::ScopedRoot root(global_gc);
+        env = global_gc->env;
+        #else
+        env = new Interpreter::Environment();
+        #endif
 
         for (const auto& stmt : statements) {
             if (!stmt) {
                 std::cerr << "Null statement encountered." << std::endl;
                 return 1;
             }
-            stmt->execute(global_gc->env, std::cout);
+            stmt->execute(env, std::cout);
         }
 
+
+        #ifdef HAS_GC
         Interpreter::GC::collect();
-        
+
         auto stats = Interpreter::GC::getStats();
         if (stats.collections_count > 0) {
-            std::cerr << "\n[GC Statistics]" << std::endl;
-            std::cerr << "  Collections: " << stats.collections_count << std::endl;
-            std::cerr << "  Objects collected: " << stats.objects_collected << std::endl;
-            std::cerr << "  Objects alive: " << stats.total_objects << std::endl;
-            std::cerr << "  Root objects: " << stats.roots_count << std::endl;
+            std::cerr << "\n[GC Statistics]\n";
+            std::cerr << "  Collections: " << stats.collections_count << "\n";
+            std::cerr << "  Objects collected: " << stats.objects_collected << "\n";
+            std::cerr << "  Objects alive: " << stats.total_objects << "\n";
+            std::cerr << "  Root objects: " << stats.roots_count << "\n";
         }
+        #else
+        delete env;
+        #endif
 
+        #ifdef HAS_SIMPLE_JIT
+        Interpreter::SimpleJIT::shutdownSimpleJIT();
+        #endif
+        
     } catch (const Interpreter::ReturnException& e) {
         return 0;
     } catch (const Interpreter::BreakException& e) {

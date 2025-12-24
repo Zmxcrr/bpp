@@ -8,14 +8,18 @@ add_library(bald_interpreter STATIC
     interpreter/interpreter/interpreter.cpp
 )
 
-option(BALD_ENABLE_JIT "Build simple JIT" ON)
-if(BALD_ENABLE_JIT)
+if(ENABLE_SIMPLE_JIT)
     target_sources(bald_interpreter PRIVATE simple_jit.cpp)
+    target_compile_definitions(bald_interpreter PUBLIC HAS_SIMPLE_JIT=1)
+endif()
+
+if(ENABLE_GC)
+    target_compile_definitions(bald_interpreter PUBLIC HAS_GC=1)
 endif()
 
 target_include_directories(bald_interpreter PUBLIC
-    ${CMAKE_CURRENT_SOURCE_DIR}                         # lib/ (gc.h, simple_jit.h)
-    ${CMAKE_CURRENT_SOURCE_DIR}/interpreter             # lib/interpreter/
+    ${CMAKE_CURRENT_SOURCE_DIR}
+    ${CMAKE_CURRENT_SOURCE_DIR}/interpreter
     ${CMAKE_CURRENT_SOURCE_DIR}/interpreter/value
     ${CMAKE_CURRENT_SOURCE_DIR}/interpreter/environment
     ${CMAKE_CURRENT_SOURCE_DIR}/interpreter/functiondef
@@ -29,3 +33,4 @@ target_include_directories(bald_interpreter PUBLIC
 )
 
 target_compile_features(bald_interpreter PUBLIC cxx_std_20)
+

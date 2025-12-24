@@ -1,8 +1,16 @@
+// primes_demo.bald - Наглядная демонстрация генерации простых чисел
+
+println("🔢 ДЕМОНСТРАЦИЯ: ГЕНЕРАЦИЯ ПРОСТЫХ ЧИСЕЛ")
+println("========================================")
+println("")
+
+// Реализация решета Эратосфена
 sieve_of_eratosthenes = function(n)
     if n < 2 then
         return []
     end if
 
+    // Создаем массив булевых значений
     isPrime = []
     for i in range(0, n + 1, 1)
         push(isPrime, true)
@@ -11,6 +19,7 @@ sieve_of_eratosthenes = function(n)
     isPrime[0] = false
     isPrime[1] = false
 
+    // Применяем решето
     limit = floor(sqrt(n))
     for p in range(2, limit + 1, 1)
         if isPrime[p] then
@@ -22,6 +31,7 @@ sieve_of_eratosthenes = function(n)
         end if
     end for
 
+    // Собираем простые числа
     primes = []
     for i in range(2, n + 1, 1)
         if isPrime[i] then
@@ -32,6 +42,7 @@ sieve_of_eratosthenes = function(n)
     return primes
 end function
 
+// Функция для показа части массива
 show_primes = function(primes, show_count)
     if len(primes) <= show_count then
         return join(primes, ", ")
@@ -51,6 +62,7 @@ show_primes = function(primes, show_count)
     return join(first_part, ", ") + " ... " + join(last_part, ", ")
 end function
 
+// Функция для суммы первых k элементов
 sum_first_k = function(arr, k)
     sum = 0
     limit = len(arr)
@@ -63,13 +75,15 @@ sum_first_k = function(arr, k)
     return sum
 end function
 
-println("ТЕСТИРОВАНИЕ РАЗНЫХ ПРЕДЕЛОВ:")
+println("📊 ТЕСТИРОВАНИЕ РАЗНЫХ ПРЕДЕЛОВ:")
+println("--------------------------------")
 
+// Тестируем разные пределы
 test_limits = [30, 100, 1000, 10000]
 
 for limit in test_limits
     println("")
-    println("Генерируем простые числа до " + to_string(limit) + ":")
+    println("🔍 Генерируем простые числа до " + to_string(limit) + ":")
 
     primes = sieve_of_eratosthenes(limit)
     count = len(primes)
@@ -79,37 +93,39 @@ for limit in test_limits
         last_prime = primes[count - 1]
         first_10_sum = sum_first_k(primes, 10)
 
-        println("Найдено простых чисел: " + to_string(count))
-        println("Первое простое число: " + to_string(first_prime))
-        println("Последнее простое число: " + to_string(last_prime))
+        println("  📊 Найдено простых чисел: " + to_string(count))
+        println("  📊 Первое простое число: " + to_string(first_prime))
+        println("  📊 Последнее простое число: " + to_string(last_prime))
 
         if limit <= 100 then
-            println("Все простые числа: " + join(primes, ", "))
+            println("  📋 Все простые числа: " + join(primes, ", "))
         else
-            println("Примеры: " + show_primes(primes, 20))
+            println("  📋 Примеры: " + show_primes(primes, 20))
         end if
 
-        println("Сумма первых 10: " + to_string(first_10_sum))
+        println("  📊 Сумма первых 10: " + to_string(first_10_sum))
 
+        // Проверяем известные значения
         if limit == 100 then
-            println("Ожидалось 25 простых до 100: " + (count == 25 and "ВЕРНО" or "ОШИБКА"))
+            println("  ✅ Ожидалось 25 простых до 100: " + (count == 25 and "ВЕРНО" or "ОШИБКА"))
         end if
         if limit == 1000 then
-            println("Ожидалось 168 простых до 1000: " + (count == 168 and "ВЕРНО" or "ОШИБКА"))
+            println("  ✅ Ожидалось 168 простых до 1000: " + (count == 168 and "ВЕРНО" or "ОШИБКА"))
         end if
         if limit == 10000 then
-            println("Ожидалось 1229 простых до 10000: " + (count == 1229 and "ВЕРНО" or "ОШИБКА"))
+            println("  ✅ Ожидалось 1229 простых до 10000: " + (count == 1229 and "ВЕРНО" or "ОШИБКА"))
         end if
     else
-        println("Простые числа не найдены")
+        println("  ❌ Простые числа не найдены")
     end if
 end for
 
 println("")
-println("ФИНАЛЬНЫЙ ТЕСТ: БОЛЬШОЙ ПРЕДЕЛ (100,000)")
+println("📊 ФИНАЛЬНЫЙ ТЕСТ: БОЛЬШОЙ ПРЕДЕЛ (100,000)")
+println("-------------------------------------------")
 
 big_limit = 100000
-println("Генерируем простые числа до " + to_string(big_limit) + "...")
+println("🔄 Генерируем простые числа до " + to_string(big_limit) + "...")
 
 big_primes = sieve_of_eratosthenes(big_limit)
 big_count = len(big_primes)
@@ -118,13 +134,13 @@ if big_count > 0 then
     big_last = big_primes[big_count - 1]
     big_first_100_sum = sum_first_k(big_primes, 100)
 
-    println("РЕЗУЛЬТАТЫ БОЛЬШОГО ТЕСТА:")
-    println("Всего найдено простых чисел: " + to_string(big_count))
-    println("Наибольшее простое число < 100000: " + to_string(big_last))
-    println("Сумма первых 100 простых: " + to_string(big_first_100_sum))
+    println("📊 РЕЗУЛЬТАТЫ БОЛЬШОГО ТЕСТА:")
+    println("  Всего найдено простых чисел: " + to_string(big_count))
+    println("  Наибольшее простое число < 100000: " + to_string(big_last))
+    println("  Сумма первых 100 простых: " + to_string(big_first_100_sum))
 
-    println("Первые 20 простых: " + show_primes(big_primes, 20))
-    println("Последние 10 простых: ")
+    println("  📋 Первые 20 простых: " + show_primes(big_primes, 20))
+    println("  📋 Последние 10 простых: ")
 
     last_10 = []
     start = big_count - 10
@@ -133,34 +149,36 @@ if big_count > 0 then
     end for
     println("      " + join(last_10, ", "))
 
+    // Проверяем известные значения
     known_count = 9592
     known_last = 99991
     known_sum = 24133
 
     println("")
-    println("ВЕРИФИКАЦИЯ РЕЗУЛЬТАТОВ:")
-    println("Ожидаемое количество: " + to_string(known_count))
-    println("Получено: " + to_string(big_count))
-    println("Количество верно: " + (big_count == known_count and "ДА" or "НЕТ"))
+    println("🔍 ВЕРИФИКАЦИЯ РЕЗУЛЬТАТОВ:")
+    println("  Ожидаемое количество: " + to_string(known_count))
+    println("  Получено: " + to_string(big_count))
+    println("  Количество верно: " + (big_count == known_count and "✅ ДА" or "❌ НЕТ"))
 
     println("  Ожидаемое последнее простое: " + to_string(known_last))
     println("  Получено: " + to_string(big_last))
-    println("  Последнее простое верно: " + (big_last == known_last and "ДА" or "НЕТ"))
+    println("  Последнее простое верно: " + (big_last == known_last and "✅ ДА" or "❌ НЕТ"))
 
     println("  Ожидаемая сумма первых 100: " + to_string(known_sum))
     println("  Получено: " + to_string(big_first_100_sum))
-    println("  Сумма верна: " + (big_first_100_sum == known_sum and "ДА" or "НЕТ"))
+    println("  Сумма верна: " + (big_first_100_sum == known_sum and "✅ ДА" or "❌ НЕТ"))
 
     all_correct = (big_count == known_count and big_last == known_last and big_first_100_sum == known_sum)
 
     println("")
     if all_correct then
-        println("ЗАКЛЮЧЕНИЕ: Генерация простых чисел работает корректно")
-        println("Решето Эратосфена реализовано корректно")
-        println("Алгоритм успешно обработал " + to_string(big_limit) + " чисел!")
+        println("🎯 ЗАКЛЮЧЕНИЕ: Генерация простых чисел работает ИДЕАЛЬНО!")
+        println("🧮 Решето Эратосфена реализовано корректно!")
+        println("💪 Алгоритм успешно обработал " + to_string(big_limit) + " чисел!")
     else
-        println("Обнаружены расхождения с ожидаемыми значениями")
+        println("❌ Обнаружены расхождения с ожидаемыми значениями")
     end if
 else
-    println("Не удалось сгенерировать простые числа")
+    println("❌ Не удалось сгенерировать простые числа")
 end if
+

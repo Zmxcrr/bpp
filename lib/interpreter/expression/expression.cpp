@@ -10,15 +10,60 @@
 #include <iostream>
 #include <algorithm>
 
+
+#ifdef HAS_SIMPLE_JIT
+#include "simple_jit.h"
+#endif
+
+namespace Interpreter {
+
+    static bool jitSafe(const Expr& e) {
+        // Запрещаем всё, что VM сейчас не умеет корректно:
+        if (dynamic_cast<const CallExpr*>(&e)) return false;       // builtins + user calls
+        if (dynamic_cast<const VariableExpr*>(&e)) return false;   // чтобы не ловить Undefined variable
+        if (dynamic_cast<const IndexExpr*>(&e)) return false;      // зависит от переменных/массивов
+        if (dynamic_cast<const SliceExpr*>(&e)) return false;
+        if (dynamic_cast<const FunctionExpr*>(&e)) return false;   // closures/тела функций не трогаем
+
+        // Разрешаем рекурсивно только "чистую" арифметику на константах:
+        if (auto* b = dynamic_cast<const BinaryExpr*>(&e))
+            return jitSafe(*b->left) && jitSafe(*b->right);
+
+        if (auto* u = dynamic_cast<const UnaryExpr*>(&e))
+            return jitSafe(*u->operand);
+
+        if (auto* a = dynamic_cast<const ArrayExpr*>(&e)) {
+            for (const auto& el : a->elements)
+                if (!jitSafe(*el)) return false;
+            return true;
+        }
+
+        // NumberExpr/StringExpr/BoolExpr/NilExpr
+        return true;
+    }
+
+    static inline Value evalExpr(const Expr& expr, Environment* env, std::ostream& out) {
+#ifdef HAS_SIMPLE_JIT
+    if (!jitSafe(expr)) {
+        return const_cast<Expr&>(expr).eval(env, out);
+    }
+    (void)out;
+    return Interpreter::SimpleJIT::evaluateWithSimpleJIT(expr, *env);
+#else
+    return const_cast<Expr&>(expr).eval(env, out);
+#endif
+}
+
+} // namespace Interpreter
+
 namespace Interpreter {
      Expr::~Expr() = default;
-
-     Value Expr::eval(Environment*, std::ostream&) {
-		return {};
+    Value Expr::eval(Environment*, std::ostream&) {
+        return {};
     }
 
     auto BinaryExpr::eval(Environment* env, std::ostream& out) -> Value {
-            const Value a = left->eval(env, out);
+            const Value a = evalExpr(*left, env, out);
 
             if (op == "and") {
                     if (!a.toBool()) {
@@ -36,7 +81,7 @@ namespace Interpreter {
                     return Value(b.toBool());
             }
 
-            const Value b = right->eval(env, out);
+            const Value b = evalExpr(*right, env, out);
 
             auto equalArrays = [&](const std::vector<Value>& arr1, const std::vector<Value>& arr2) -> bool {
                     if (arr1.size() != arr2.size()) {

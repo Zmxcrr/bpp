@@ -6,6 +6,7 @@
 namespace Interpreter {
     struct Environment {
         Environment* parent{nullptr};
+        Environment* env{this};
         std::map<std::string, Value> variables;
 
         Environment();
