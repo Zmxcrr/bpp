@@ -1,136 +1,228 @@
-#include "interpreter.h"
+#include "interpreter/lexer/lexer.h"
+#include "interpreter/parser/parser.h"
+#include "interpreter/interpreter/interpreter.h"
+
+#ifdef BALD_HAS_VM
+#include "compiler/compiler.h"
+#include "vm/vm.h"
+#endif
+
+#ifdef BALD_HAS_OPTIMIZATIONS
+#include "optimizer/const_folding.h"
+#include "optimizer/dead_code.h"
+#endif
+
 #include <iostream>
 #include <fstream>
-#include <string>
+#include <sstream>
+#include <chrono>
+#include <cstring>
 
-#ifdef HAS_GC
-#include "gc.h"
+void printUsage(const char* prog) {
+    std::cout << "Usage: " << prog << " [options] <source.bald>" << std::endl;
+    std::cout << "\nOptions:" << std::endl;
+#ifdef BALD_HAS_VM
+    std::cout << "  --vm              Use bytecode VM (default)" << std::endl;
+    std::cout << "  --interpreter     Use AST-walking interpreter" << std::endl;
+    std::cout << "  --optimize, -O    Enable optimizations (constant folding, dead code elimination)" << std::endl;
+    std::cout << "  --dump-bytecode   Show compiled bytecode" << std::endl;
 #endif
-
-#ifdef HAS_SIMPLE_JIT
-#include "simple_jit.h"
-#endif
+    std::cout << "  --stats           Show execution statistics" << std::endl;
+    std::cout << "  --help            Show this help" << std::endl;
+}
 
 int main(int argc, char* argv[]) {
     if (argc < 2) {
-        std::cout << "Bald++ Interpreter v1.0" << std::endl;
-        std::cout << "Usage: " << argv[0] << " <program.bald>" << std::endl;
-        std::cout << std::endl;
-        std::cout << "Example programs:" << std::endl;
-        std::cout << "  " << argv[0] << " factorial_test.bald" << std::endl;
-        std::cout << "  " << argv[0] << " hello_world.bald" << std::endl;
-        std::cout << "  " << argv[0] << " comprehensive_benchmark.bald" << std::endl;
-        std::cout << std::endl;
-        std::cout << "Note: Bald++ programs use the .bald file extension" << std::endl;
+        printUsage(argv[0]);
         return 1;
     }
-
-    std::string filename = argv[1];
-
-    if (filename.length() < 5 || filename.substr(filename.length() - 5) != ".bald") {
-        std::cerr << "Warning: Expected .bald file extension for Bald++ programs" << std::endl;
+    
+    // Parse arguments
+    bool use_vm = true;
+    bool show_stats = false;
+    bool optimize = false;
+    bool dump_bytecode = false;
+    const char* filename = nullptr;
+    
+    for (int i = 1; i < argc; ++i) {
+        if (std::strcmp(argv[i], "--help") == 0) {
+            printUsage(argv[0]);
+            return 0;
+        } else if (std::strcmp(argv[i], "--interpreter") == 0) {
+            use_vm = false;
+        } else if (std::strcmp(argv[i], "--vm") == 0) {
+            use_vm = true;
+        } else if (std::strcmp(argv[i], "--stats") == 0) {
+            show_stats = true;
+        } else if (std::strcmp(argv[i], "--optimize") == 0 || std::strcmp(argv[i], "-O") == 0) {
+            optimize = true;
+        } else if (std::strcmp(argv[i], "--dump-bytecode") == 0) {
+            dump_bytecode = true;
+        } else if (argv[i][0] != '-') {
+            filename = argv[i];
+        }
     }
-
-    std::ifstream file(filename);
-    if (!file) {
-        std::cerr << "Error: Cannot open file " << filename << std::endl;
+    
+    if (!filename) {
+        std::cerr << "Error: No input file specified" << std::endl;
+        printUsage(argv[0]);
         return 1;
     }
-
-    std::string source((std::istreambuf_iterator<char>(file)),
-                       std::istreambuf_iterator<char>());
-    file.close();
-
-    #ifdef HAS_GC
-    Interpreter::GC::Collector::instance().setThreshold(100);
-    #endif
-    #ifdef HAS_SIMPLE_JIT
-    if (!Interpreter::SimpleJIT::initializeSimpleJIT()) {
-        std::cerr << "Warning: SimpleJIT initialization failed, continuing without JIT.\n";
-    } else {
-        Interpreter::SimpleJIT::setJITThreshold(3);
-        Interpreter::SimpleJIT::setJITOptimization(true);
+    
+#ifndef BALD_HAS_VM
+    if (use_vm) {
+        std::cerr << "Warning: VM not available in this build, using interpreter" << std::endl;
+        use_vm = false;
     }
-    #endif
-
+#endif
+    
     try {
+        // Read source file
+        std::ifstream file(filename);
+        if (!file) {
+            std::cerr << "Error: Cannot open file " << filename << std::endl;
+            return 1;
+        }
+        
+        std::stringstream buffer;
+        buffer << file.rdbuf();
+        std::string source = buffer.str();
+        
+        auto start_time = std::chrono::high_resolution_clock::now();
+        
+        // Lexer
         Interpreter::Lexer lexer(source);
         auto tokens = lexer.tokenize();
-
-        bool lexerError = false;
-        for (const auto& token : tokens) {
-            if (token.type == Interpreter::TokenType::Unknown) {
-                std::cerr << "Line " << token.line << ", Column " << token.column 
-                          << ": Unknown token '" << token.text << "'" << std::endl;
-                lexerError = true;
-            }
-        }
-
-        if (lexerError) {
-            return 1;
-        }
-
-        Interpreter::Parser parser(tokens);
-        auto statements = parser.parse();
-
-        if (parser.parsingFailed()) {
-            std::cerr << "Parsing failed." << std::endl;
-            return 1;
-        }
-
-        Interpreter::Environment* env = nullptr;
-
-        #ifdef HAS_GC
-        auto* global_gc = Interpreter::GC::allocate<Interpreter::GC::GCEnvironment>(
-            new Interpreter::Environment()
-        );
-        Interpreter::GC::ScopedRoot root(global_gc);
-        env = global_gc->env;
-        #else
-        env = new Interpreter::Environment();
-        #endif
-
-        for (const auto& stmt : statements) {
-            if (!stmt) {
-                std::cerr << "Null statement encountered." << std::endl;
-                return 1;
-            }
-            stmt->execute(env, std::cout);
-        }
-
-
-        #ifdef HAS_GC
-        Interpreter::GC::collect();
-
-        auto stats = Interpreter::GC::getStats();
-        if (stats.collections_count > 0) {
-            std::cerr << "\n[GC Statistics]\n";
-            std::cerr << "  Collections: " << stats.collections_count << "\n";
-            std::cerr << "  Objects collected: " << stats.objects_collected << "\n";
-            std::cerr << "  Objects alive: " << stats.total_objects << "\n";
-            std::cerr << "  Root objects: " << stats.roots_count << "\n";
-        }
-        #else
-        delete env;
-        #endif
-
-        #ifdef HAS_SIMPLE_JIT
-        Interpreter::SimpleJIT::shutdownSimpleJIT();
-        #endif
         
-    } catch (const Interpreter::ReturnException& e) {
-        return 0;
-    } catch (const Interpreter::BreakException& e) {
-        std::cerr << "Break statement outside loop." << std::endl;
-        return 1;
-    } catch (const Interpreter::ContinueException& e) {
-        std::cerr << "Continue statement outside loop." << std::endl;
-        return 1;
+        // Parser
+        Interpreter::Parser parser(tokens);
+        auto ast = parser.parse();
+        
+        auto parse_time = std::chrono::high_resolution_clock::now();
+        
+#ifdef BALD_HAS_VM
+        if (use_vm) {
+            // VM path
+            BaldVM::Compiler compiler;
+            auto program = compiler.compile(ast);
+            
+            auto compile_time = std::chrono::high_resolution_clock::now();
+            
+            size_t before_opt = program.bytecode.size();
+            size_t after_opt = before_opt;
+            
+            // Apply optimizations only if --optimize flag is set
+#ifdef BALD_HAS_OPTIMIZATIONS
+            if (optimize) {
+                std::cout << "[Optimizer] Optimizations enabled" << std::endl;
+                
+                BaldVM::Optimizer::ConstantFoldingOptimizer const_fold;
+                BaldVM::Optimizer::DeadCodeOptimizer dead_code;
+                
+                const_fold.optimize(program.bytecode, program.constants);
+                dead_code.optimize(program.bytecode, program.constants);
+                
+                after_opt = program.bytecode.size();
+            }
+#else
+            if (optimize) {
+                std::cerr << "Warning: Optimizations not available in this build" << std::endl;
+            }
+#endif
+            
+            auto opt_time = std::chrono::high_resolution_clock::now();
+            
+            // Dump bytecode if requested
+            if (dump_bytecode) {
+                std::cout << "\n=== BYTECODE ";
+                if (optimize) {
+                    std::cout << "(OPTIMIZED)";
+                } else {
+                    std::cout << "(UNOPTIMIZED)";
+                }
+                std::cout << " ===" << std::endl;
+                
+                for (size_t i = 0; i < program.bytecode.size(); ++i) {
+                    std::cout << "  " << i << ": " 
+                             << BaldVM::opcodeToString(program.bytecode[i].opcode)
+                             << " " << program.bytecode[i].operand << std::endl;
+                }
+                std::cout << "===================\n" << std::endl;
+            }
+            
+            // Execute on VM
+            BaldVM::VirtualMachine vm;
+            vm.execute(program.bytecode, program.constants, 
+                      program.variable_names, std::cout);
+            
+            auto end_time = std::chrono::high_resolution_clock::now();
+            
+            if (show_stats) {
+                std::cout << "\n=== VM Statistics ===" << std::endl;
+                std::cout << " Mode: Bytecode VM" << std::endl;
+#ifdef BALD_HAS_OPTIMIZATIONS
+                if (optimize) {
+                    std::cout << " Optimizations: ENABLED" << std::endl;
+                    std::cout << " Bytecode instructions: " << before_opt 
+                             << " → " << after_opt 
+                             << " (removed: " << (before_opt - after_opt) << ")" << std::endl;
+                } else {
+                    std::cout << " Optimizations: DISABLED" << std::endl;
+                    std::cout << " Bytecode instructions: " << before_opt << std::endl;
+                }
+#else
+                std::cout << " Bytecode instructions: " << before_opt << std::endl;
+#endif
+                std::cout << " Instructions executed: " << vm.getInstructionsExecuted() << std::endl;
+                std::cout << " Stack peak: " << vm.getStackPeak() << std::endl;
+#ifdef BALD_HAS_GC
+                std::cout << " GC collections: " << vm.getGCCollections() << std::endl;
+#endif
+                
+                auto parse_ms = std::chrono::duration_cast<std::chrono::microseconds>(
+                    parse_time - start_time).count() / 1000.0;
+                auto compile_ms = std::chrono::duration_cast<std::chrono::microseconds>(
+                    compile_time - parse_time).count() / 1000.0;
+                auto opt_ms = std::chrono::duration_cast<std::chrono::microseconds>(
+                    opt_time - compile_time).count() / 1000.0;
+                auto exec_ms = std::chrono::duration_cast<std::chrono::microseconds>(
+                    end_time - opt_time).count() / 1000.0;
+                
+                std::cout << "\n=== Timing ===" << std::endl;
+                std::cout << " Parsing:      " << parse_ms << " ms" << std::endl;
+                std::cout << " Compilation:  " << compile_ms << " ms" << std::endl;
+                std::cout << " Optimization: " << opt_ms << " ms" << std::endl;
+                std::cout << " Execution:    " << exec_ms << " ms" << std::endl;
+                std::cout << " Total:        " << (parse_ms + compile_ms + opt_ms + exec_ms) << " ms" << std::endl;
+            }
+        } else
+#endif
+        {
+            // AST interpreter path
+            std::istringstream input_stream(source);
+            Interpreter::interpret(input_stream, std::cout);           
+            auto end_time = std::chrono::high_resolution_clock::now();
+            
+            if (show_stats) {
+                auto parse_ms = std::chrono::duration_cast<std::chrono::microseconds>(
+                    parse_time - start_time).count() / 1000.0;
+                auto exec_ms = std::chrono::duration_cast<std::chrono::microseconds>(
+                    end_time - parse_time).count() / 1000.0;
+                
+                std::cout << "\n=== Interpreter Statistics ===" << std::endl;
+                std::cout << " Mode: AST-walking" << std::endl;
+                std::cout << "\n=== Timing ===" << std::endl;
+                std::cout << " Parsing:   " << parse_ms << " ms" << std::endl;
+                std::cout << " Execution: " << exec_ms << " ms" << std::endl;
+                std::cout << " Total:     " << (parse_ms + exec_ms) << " ms" << std::endl;
+            }
+        }
+        
     } catch (const std::exception& e) {
-        std::cerr << "Runtime error: " << e.what() << std::endl;
+        std::cerr << "Error: " << e.what() << std::endl;
         return 1;
     }
-
+    
     return 0;
 }
 

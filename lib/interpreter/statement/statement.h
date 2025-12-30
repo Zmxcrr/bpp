@@ -1,7 +1,7 @@
 #pragma once
 
-#include "value.h"
-#include "environment.h"
+#include "../value/value.h"
+#include "../environment/environment.h"
 
 namespace Interpreter {
     struct Expr;

@@ -1,0 +1,1 @@
+/usr/bin/c++ -O3 -DNDEBUG -Wl,--dependency-file=CMakeFiles/bald_interpreter.dir/link.d CMakeFiles/bald_interpreter.dir/main.cpp.o -o bald_interpreter  lib/libbald_lib.a

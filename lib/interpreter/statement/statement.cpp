@@ -1,5 +1,5 @@
-#include "statement.h"
-#include "expression.h"
+#include "../statement/statement.h"
+#include "../expression/expression.h"
 #include <cmath>
 #include <iostream>
 #include <algorithm>

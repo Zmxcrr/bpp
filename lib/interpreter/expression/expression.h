@@ -1,11 +1,11 @@
 #pragma once
 
-#include "value.h"
-#include "environment.h"
-#include "interpreter.h"
-#include "functiondef.h"
-#include "exception.h"
-#include "statement.h"
+#include "../value/value.h"
+#include "../environment/environment.h"
+#include "../interpreter/interpreter.h"
+#include "../functiondef/functiondef.h"
+#include "../exception/exception.h"
+#include "../statement/statement.h"
 
 namespace Interpreter {
     struct Expr {

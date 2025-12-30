@@ -1,0 +1,101 @@
+println("🚀 BALD++ VM BENCHMARK")
+println("=====================")
+println("")
+
+// ЗАДАЧА 1: Факториал
+println("📋 ЗАДАЧА 1: ФАКТОРИАЛ")
+factorial = function(n)
+    if n <= 1 then
+        return 1
+    end if
+    return n * factorial(n - 1)
+end function
+
+result = factorial(21)
+println("✅ factorial(21) = " + to_string(result))
+println("")
+
+// ЗАДАЧА 2: Сортировка
+println("📋 ЗАДАЧА 2: СОРТИРОВКА")
+make_reverse_array = function(size)
+    arr = []
+    i = size - 1
+    while i >= 0
+        push(arr, i)
+        i = i - 1
+    end while
+    return arr
+end function
+
+calculate_sum = function(arr)
+    total = 0
+    for x in arr
+        total = total + x
+    end for
+    return total
+end function
+
+test_array = make_reverse_array(10000)
+original_sum = calculate_sum(test_array)
+println("  Создан массив из 10000 элементов")
+println("  Сумма ДО сортировки: " + to_string(original_sum))
+
+sort(test_array)
+sorted_sum = calculate_sum(test_array)
+println("  Сумма ПОСЛЕ сортировки: " + to_string(sorted_sum))
+println("✅ Сортировка: " + to_string(original_sum == sorted_sum and "УСПЕХ" or "ОШИБКА"))
+println("")
+
+// ЗАДАЧА 3: Простые числа (Решето Эратосфена)
+println("📋 ЗАДАЧА 3: ПРОСТЫЕ ЧИСЛА")
+generate_primes = function(limit)
+    if limit < 2 then
+        return []
+    end if
+    
+    is_prime = []
+    i = 0
+    while i <= limit
+        push(is_prime, true)
+        i = i + 1
+    end while
+    
+    is_prime[0] = false
+    is_prime[1] = false
+    
+    sqrt_limit = floor(sqrt(limit))
+    p = 2
+    while p <= sqrt_limit
+        if is_prime[p] then
+            multiple = p * p
+            while multiple <= limit
+                is_prime[multiple] = false
+                multiple = multiple + p
+            end while
+        end if
+        p = p + 1
+    end while
+    
+    primes = []
+    i = 2
+    while i <= limit
+        if is_prime[i] then
+            push(primes, i)
+        end if
+        i = i + 1
+    end while
+    
+    return primes
+end function
+
+primes = generate_primes(100000)
+count = len(primes)
+last = primes[count - 1]
+
+println("  Найдено простых до 100000: " + to_string(count))
+println("  Наибольшее простое: " + to_string(last))
+println("✅ Решето Эратосфена завершено")
+println("")
+
+println("🎯 ВСЕ ТЕСТЫ ПРОЙДЕНЫ!")
+

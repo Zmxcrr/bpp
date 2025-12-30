@@ -36,6 +36,8 @@ namespace Interpreter {
         explicit Value(std::vector<Value>&& arr);
 
         [[nodiscard]] bool toBool() const;
+
+        [[nodiscard]] std::string toString() const;
     };
 
     inline std::string valueTypeToString(ValueType type) {
@@ -101,4 +103,38 @@ namespace Interpreter {
         }
     }
 
+
+    [[nodiscard]] inline std::string Value::toString() const {
+        switch (type) {
+            case ValueType::NIL:
+                return "nil";
+            
+            case ValueType::NUMBER:
+                return std::to_string(numberValue);
+            
+            case ValueType::BOOL:
+                return boolValue ? "true" : "false";
+            
+            case ValueType::STRING:
+                return stringValue ? *stringValue : "";
+            
+            case ValueType::ARRAY:
+                if (!arrayValue) return "[]";
+                {
+                    std::string result = "[";
+                    for (size_t i = 0; i < arrayValue->size(); ++i) {
+                        if (i > 0) result += ", ";
+                        result += (*arrayValue)[i].toString();
+                    }
+                    result += "]";
+                    return result;
+                }
+            
+            case ValueType::FUNCTION:
+                return "<function>";
+            
+            default:
+                return "<unknown>";
+        }
+    }
 } //Interpreter

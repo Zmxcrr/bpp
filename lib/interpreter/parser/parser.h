@@ -1,7 +1,7 @@
 #pragma once
 
-#include "token.h"
-#include "statement.h"
+#include "../token/token.h"
+#include "../statement/statement.h"
 
 namespace Interpreter {
     class Parser {

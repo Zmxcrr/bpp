@@ -1,0 +1,12 @@
+/home/michael/bald/bpp/build/CMakeFiles/bald_interpreter.dir
+/home/michael/bald/bpp/build/CMakeFiles/edit_cache.dir
+/home/michael/bald/bpp/build/CMakeFiles/rebuild_cache.dir
+/home/michael/bald/bpp/build/lib/CMakeFiles/bald_lib.dir
+/home/michael/bald/bpp/build/lib/CMakeFiles/edit_cache.dir
+/home/michael/bald/bpp/build/lib/CMakeFiles/rebuild_cache.dir
+/home/michael/bald/bpp/build/examples/CMakeFiles/run_benchmark.dir
+/home/michael/bald/bpp/build/examples/CMakeFiles/run_optimize.dir
+/home/michael/bald/bpp/build/examples/CMakeFiles/run_all_programs.dir
+/home/michael/bald/bpp/build/examples/CMakeFiles/list_programs.dir
+/home/michael/bald/bpp/build/examples/CMakeFiles/edit_cache.dir
+/home/michael/bald/bpp/build/examples/CMakeFiles/rebuild_cache.dir

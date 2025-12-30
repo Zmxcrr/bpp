@@ -1,6 +1,6 @@
 #pragma once
 
-#include "value.h"
+#include "../value/value.h"
 
 namespace Interpreter {
     struct ReturnException : public std::exception {

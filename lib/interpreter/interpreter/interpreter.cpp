@@ -1,7 +1,7 @@
 #include "interpreter.h"
-#include "parser.h"
-#include "lexer.h"
-#include "exception.h"
+#include "../parser/parser.h"
+#include "../lexer/lexer.h"
+#include "../exception/exception.h"
 #include <iostream>
 
 namespace Interpreter {
